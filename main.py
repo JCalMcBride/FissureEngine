@@ -7,8 +7,9 @@ async def main():
     fissure_engine = FissureEngine()
 
     await fissure_engine.build_fissure_list()
-    print(fissure_engine.get_soonest_expiry())
-    print(fissure_engine.fissure_lists)
+    next_reset = fissure_engine.get_reset_string(fissure_engine.FISSURE_TYPE_NORMAL, fissure_engine.DISPLAY_TYPE_DISCORD)
+
+    print(next_reset)
 
 
 if __name__ == "__main__":

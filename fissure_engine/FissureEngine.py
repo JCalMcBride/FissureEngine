@@ -4,7 +4,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Dict
 from urllib.request import urlopen
 
 import aiohttp
@@ -30,6 +30,8 @@ class FissureEngine:
     FISSURE_TYPE_VOID_STORMS = 'Void Storms'
     FISSURE_TYPE_STEEL_PATH = 'Steel Path'
     FISSURE_TYPE_NORMAL = 'Normal'
+    DISPLAY_TYPE_DISCORD = 'Discord'
+    DISPLAY_TYPE_TIME_LEFT = 'Time Left'
 
     def __init__(self):
         self.fissure_lists = {
@@ -129,9 +131,45 @@ class FissureEngine:
         soonest_expiries = defaultdict(dict)
 
         for fissure_type, fissures in self.fissure_lists.items():
-            fissures.sort(key=lambda fissure: (SORT_ORDER[fissure.era], fissure.expiry))
             for era, group in itertools.groupby(fissures, key=lambda fissure: fissure.era):
                 soonest_expiries[fissure_type][era] = next(group).expiry
 
         return soonest_expiries
+
+    def get_last_expiry(self):
+        last_expiries = defaultdict(dict)
+
+        for fissure_type, fissures in self.fissure_lists.items():
+            for era, group in itertools.groupby(fissures, key=lambda fissure: fissure.era):
+                sorted_expiries = sorted(group, key=lambda fissure: fissure.expiry, reverse=True)
+                last_expiries[fissure_type][era] = sorted_expiries[0].expiry - timedelta(minutes=3)
+
+        return last_expiries
+
+    def format_time_remaining(self, expiry: datetime, display_type: str = DISPLAY_TYPE_TIME_LEFT):
+        expiry_timestamp = expiry.timestamp()
+        if display_type == self.DISPLAY_TYPE_TIME_LEFT:
+            now = datetime.utcnow()
+            time_remaining = expiry - now
+
+            hours, remainder = divmod(time_remaining.total_seconds(), 3600)
+            minutes, seconds = divmod(remainder, 60)
+
+            # Return time remaining and prepend it with " in "
+            return f"in {f'{int(hours)} hour ' if hours > 0 else ''}{int(minutes)} min"
+        elif display_type == self.DISPLAY_TYPE_DISCORD:
+            return f"<t:{int(expiry_timestamp)}:R>"
+
+    def get_reset_string(self, fissure_type: str = FISSURE_TYPE_NORMAL,
+                         display_type: str = DISPLAY_TYPE_TIME_LEFT,
+                         emoji_dict: Dict[str, str] = None):
+        last_expiries = self.get_last_expiry()
+
+        # If emoji_dict is None, use a "do-nothing" lambda function as default
+        get_emoji = (lambda x: emoji_dict.get(x, x)) if emoji_dict else (lambda x: x)
+
+        expiries = [f"{get_emoji(era)} {self.format_time_remaining(expiry, display_type=display_type)}"
+                    for era, expiry in last_expiries[fissure_type].items()]
+
+        return '\n'.join(expiries)
 
