@@ -1,21 +1,26 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1.22'
+VERSION = '1.0.1'
 DESCRIPTION = 'Engine for getting fissure information in Warframe.'
 LONG_DESCRIPTION = 'Engine for getting the current fissures for Warframe in a dictionary object.'
 
+
 setup(
-        name="fissure_engine", 
-        version=VERSION,
-        author="Jacob McBride",
-        author_email="jake55111@gmail.com",
-        description=DESCRIPTION,
-        long_description=LONG_DESCRIPTION,
-        packages=find_packages(),
-        install_requires=[],
-        keywords=['warframe','fissures'],
-        classifiers= [
-            "Programming Language :: Python :: 3",
-            "Operating System :: OS Independent",
-        ]
+    name='fissure-engine',
+    version=VERSION,
+    description=DESCRIPTION,
+    long_description=LONG_DESCRIPTION,
+    author='Jacob McBride',
+    author_email='jake55111@gmail.com',
+    packages=find_packages(),
+    keywords=['warframe', 'fissures'],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Operating System :: OS Independent",
+    ],
+    install_requires=[
+        'aiohttp~=3.9.3',
+        'ordered-set~=4.1.0',
+        'tenacity~=8.2.3'
+    ],
 )
