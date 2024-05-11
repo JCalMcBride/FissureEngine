@@ -3275,6 +3275,7 @@ fissure_parser = {
         "Gas City Sabotage": 4,
         "Orokin Sabotage": 4,
         "Injector Sabotage": 4,
+        "Steel Path Void Cascade": 3,
         "Void Cascade": 5,
         "Void Flood": 5,
         "Alchemy": 5

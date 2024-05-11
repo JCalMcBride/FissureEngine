@@ -73,7 +73,7 @@ class Fissure:
 def get_fissure_type_identifier(fissure_type, emoji_dict):
     if fissure_type != FissureEngine.FISSURE_TYPE_NORMAL:
         short_identifier = ''.join(word[0] for word in fissure_type.split())
-        return emoji_dict.get(short_identifier, short_identifier)
+        return f"{emoji_dict.get(short_identifier, short_identifier)} "
     return ""
 
 class FissureEngine:
@@ -133,7 +133,7 @@ class FissureEngine:
         """
         preprocess_functions = {
             "{era}": lambda
-                fissure: f"{get_fissure_type_identifier(fissure.fissure_type, emoji_dict)} {emoji_dict.get(fissure.era, '') if emoji_dict else ''} {fissure.era}",
+                fissure: f"{get_fissure_type_identifier(fissure.fissure_type, emoji_dict)}{f'{emoji_dict.get(fissure.era, '')} ' if emoji_dict else ''}{fissure.era}",
             "{expiry}": lambda fissure: self.format_time_remaining(fissure.expiry, display_type)
         }
 
@@ -219,7 +219,11 @@ class FissureEngine:
     @staticmethod
     def get_fissure_data(fissure, fissure_type, mission):
         era = fissure_parser['era'][fissure[fissure_parser["era_key"][fissure_type]]]
-        tier = fissure_parser['tier'][mission]
+
+        if f"{fissure_type} {mission}" in fissure_parser['tier']:
+            tier = fissure_parser['tier'][f"{fissure_type} {mission}"]
+        else:
+            tier = fissure_parser['tier'][mission]
 
         return era, tier
 
