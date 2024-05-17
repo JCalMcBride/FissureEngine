@@ -70,11 +70,12 @@ class Fissure:
         return hash((self.node, self.mission, self.planet, self.tileset, self.enemy,
                      self.era, self.tier, self.expiry, self.fissure_type, self.activation, self.duration))
 
-def get_fissure_type_identifier(fissure_type, emoji_dict):
+def get_fissure_type_identifier(fissure_type, image_dict):
     if fissure_type != FissureEngine.FISSURE_TYPE_NORMAL:
         short_identifier = ''.join(word[0] for word in fissure_type.split())
-        return f"{emoji_dict.get(short_identifier, short_identifier)} "
+        return f"{image_dict.get(short_identifier, short_identifier) if image_dict else short_identifier} "
     return ""
+
 
 class FissureEngine:
     FISSURE_TYPE_VOID_STORMS = 'Void Storms'
@@ -83,6 +84,7 @@ class FissureEngine:
     FISSURE_TYPES = [FISSURE_TYPE_VOID_STORMS, FISSURE_TYPE_STEEL_PATH, FISSURE_TYPE_NORMAL]
     DISPLAY_TYPE_DISCORD = 'Discord'
     DISPLAY_TYPE_TIME_LEFT = 'Time Left'
+    DISPLAY_TYPE_TIMESTAMP = 'Timestamp'  # Added new display type
     ERA_LITH = 'Lith'
     ERA_MESO = 'Meso'
     ERA_NEO = 'Neo'
@@ -118,7 +120,7 @@ class FissureEngine:
         self.last_update = None
 
     def get_fields(self, fissures: List[Fissure], field_formats: List[Tuple[str, str]],
-                   display_type: str = DISPLAY_TYPE_TIME_LEFT, emoji_dict: Dict[str, str] = None):
+                   display_type: str = DISPLAY_TYPE_TIME_LEFT, image_dict: Dict[str, str] = None):
         """
         Function to retrieve specified fields from a list of Fissure objects.
 
@@ -126,14 +128,14 @@ class FissureEngine:
             fissures (list): List of fissures.
             field_formats (list): List of tuples. Each tuple contains a field name and a format string.
             display_type (str): Type of display for the expiry field.
-            emoji_dict (dict): A dictionary mapping fissure type short identifiers and eras to emojis.
+            image_dict (dict): A dictionary mapping fissure type short identifiers and eras to images or emojis.
 
         Returns:
             dict: A dictionary where each key is a field name and the corresponding value is a list of all values for that field from the list of Fissures, formatted according to the format string.
         """
         preprocess_functions = {
             "{era}": lambda
-                fissure: f"{get_fissure_type_identifier(fissure.fissure_type, emoji_dict)}{f'{emoji_dict.get(fissure.era, '')} ' if emoji_dict else ''}{fissure.era}",
+                fissure: f"{get_fissure_type_identifier(fissure.fissure_type, image_dict)}{f'{image_dict.get(fissure.era, '')} ' if image_dict else ''}{fissure.era}",
             "{expiry}": lambda fissure: self.format_time_remaining(fissure.expiry, display_type)
         }
 
@@ -346,10 +348,12 @@ class FissureEngine:
             return f"in {f'{int(hours)} hour ' if hours > 0 else ''}{int(minutes)} minute{'' if minutes == 1 else 's'}"
         elif display_type == self.DISPLAY_TYPE_DISCORD:
             return f"<t:{int(expiry_timestamp)}:R>"
+        elif display_type == self.DISPLAY_TYPE_TIMESTAMP:  # Added new display type handling
+            return f"{int(expiry_timestamp)}"
 
     def get_single_reset(self, fissure_type: str = FISSURE_TYPE_NORMAL,
                          display_type: str = DISPLAY_TYPE_TIME_LEFT,
-                         emoji_dict: Dict[str, str] = None,
+                         image_dict: Dict[str, str] = None,
                          era_list: List[str] = None):
         if era_list is None:
             era_list = self.get_era_list()
@@ -359,8 +363,8 @@ class FissureEngine:
 
         last_expiries = self.get_last_expiry(era_list)
 
-        # If emoji_dict is None, use a "do-nothing" lambda function as default
-        get_emoji = (lambda x: emoji_dict.get(x, x)) if emoji_dict else (lambda x: x)
+        # If image_dict is None, use a "do-nothing" lambda function as default
+        get_image = (lambda x: image_dict.get(x, x)) if image_dict else (lambda x: x)
 
         expiries = []
 
@@ -374,19 +378,20 @@ class FissureEngine:
 
         expiries.append(next_reset_string)
 
-        expiries += [f"{get_emoji(era)} {self.format_time_remaining(expiry, display_type=display_type)}"
+        expiries += [f"{get_image(era)} {self.format_time_remaining(expiry, display_type=display_type)}"
                      for era, expiry in last_expiries[fissure_type].items()]
 
         return expiries
 
+
     def get_resets(self, fissure_type: Union[str, List[str]] = FISSURE_TYPE_NORMAL,
                    display_type: str = DISPLAY_TYPE_TIME_LEFT,
-                   emoji_dict: Dict[str, str] = None,
+                   image_dict: Dict[str, str] = None,
                    era_list: List[str] = None):
         if isinstance(fissure_type, str):
-            return self.get_single_reset(fissure_type, display_type, emoji_dict, era_list)
+            return self.get_single_reset(fissure_type, display_type, image_dict, era_list)
         elif isinstance(fissure_type, list):
-            return {ft: self.get_single_reset(ft, display_type, emoji_dict, era_list) for ft in fissure_type}
+            return {ft: self.get_single_reset(ft, display_type, image_dict, era_list) for ft in fissure_type}
         else:
             raise ValueError(f"Invalid fissure type: {fissure_type}")
 
@@ -396,8 +401,9 @@ class FissureEngine:
 
         Args:
             **kwargs: Filtering options. Can include fissure_type, era, node, mission, planet, tileset, and tier.
-                      Each argument can be a string or a list of strings.
-                      For example, fissure_type=['Normal', 'Steel Path'], era='Lith', node=['Node1', 'Node2'], mission='SomeMission'.
+                      Each argument can be a single value or a list of values of any type.
+                      To blacklist a value, prefix the value with a "-".
+                      For example, fissure_type=['Normal', 'Steel Path'], era='Lith', node=['-Node1', 'Node2'], mission='SomeMission'.
 
         Returns:
             List[Fissure]: A list of Fissure objects that meet all the specified conditions.
@@ -415,9 +421,31 @@ class FissureEngine:
         """Ensures that the value is a list. If not, converts it into a list with a single element."""
         return value if isinstance(value, list) else [value]
 
-    def _filter_condition(self, fissure, attribute, value):
-        """Checks whether the fissure attribute matches the value (or one of the values if it's a list)."""
+    def _filter_condition(self, fissure, attribute, values):
+        """
+        Checks whether the fissure attribute matches the specified values.
+        Values prefixed with a "-" are treated as blacklist conditions.
+        """
         actual_value = getattr(fissure, attribute)
-        expected_values = self._ensure_list(value)
+        expected_values = self._ensure_list(values)
 
-        return actual_value in expected_values
+        blacklist_values = [self._strip_prefix(value) for value in expected_values if self._is_blacklist(value)]
+        whitelist_values = [value for value in expected_values if not self._is_blacklist(value)]
+
+        if blacklist_values and actual_value in blacklist_values:
+            return False
+        elif whitelist_values and actual_value not in whitelist_values:
+            return False
+        else:
+            return True
+
+    @staticmethod
+    def _is_blacklist(value):
+        """Checks if a value is a blacklist condition."""
+        return isinstance(value, str) and value.startswith('-')
+
+    @staticmethod
+    def _strip_prefix(value):
+        """Removes the blacklist prefix ("-") from a value if it exists."""
+        return value.lstrip('-') if isinstance(value, str) else value
+
