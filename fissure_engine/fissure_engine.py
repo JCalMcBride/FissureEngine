@@ -45,12 +45,6 @@ class Fissure:
     activation: datetime
     duration: timedelta
 
-    @property
-    def time_left(self):
-        now = datetime.now()
-        time_remaining = self.expiry - now
-        return int(time_remaining.total_seconds())
-
     def __eq__(self, other):
         if isinstance(other, Fissure):
             return (self.node == other.node and
