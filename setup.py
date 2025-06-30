@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.0.8'
+VERSION = '1.0.9'
 DESCRIPTION = 'Engine for getting fissure information in Warframe.'
 LONG_DESCRIPTION = 'Engine for getting the current fissures for Warframe in a dictionary object.'
 
@@ -19,7 +19,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'aiohttp~=3.9.3',
+        "aiohttp==3.10.11",
         'ordered-set~=4.1.0',
         'tenacity~=8.2.3'
     ],
