@@ -186,9 +186,9 @@ class FissureEngine:
 
         @retry(stop=stop_after_attempt(5), wait=wait_exponential(max=60))
         async def make_request():
-            async with session.get("http://content.warframe.com/dynamic/worldState.php") as res:
+            async with session.get("https://api.warframe.com/cdn/worldState.php") as res:
                 res.raise_for_status()
-                logger.debug(f"Fetched data for http://content.warframe.com/dynamic/worldState.php")
+                logger.debug(f"Fetched data for https://api.warframe.com/cdn/worldState.php")
                 return await res.text()
 
         # Makes the API request, retrying up to 5 times if it fails, waiting 1 second between each attempt
