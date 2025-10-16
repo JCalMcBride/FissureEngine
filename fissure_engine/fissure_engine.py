@@ -171,12 +171,13 @@ class FissureEngine:
             return fissure_parser[type][data][data2]
 
     @staticmethod
-    async def get_world_state():
+    async def get_world_state(data_url="https://api.warframe.com/cdn/worldState.php"):
         """
         Asynchronously fetch data from the given URL.
 
         Args:
             session (aiohttp.ClientSession): The HTTP session to use for making the request.
+            data_url (str): The URL to fetch data from.
         Returns:
             dict: The JSON data fetched from the URL.
 
@@ -186,12 +187,10 @@ class FissureEngine:
 
         @retry(stop=stop_after_attempt(5), wait=wait_exponential(max=60))
         async def make_request():
-            payload = {"url": "https://api.warframe.com/cdn/worldState.php"}
-            async with session.post("https://api.empx.cc/proxy/", json=payload) as res:
+            async with session.get(data_url) as res:
                 res.raise_for_status()
-                logger.debug(f"Fetched data for https://api.empx.cc/proxy/")
+                logger.debug(f"Fetched data for {data_url}")
                 return await res.text()
-            return None
 
         # Makes the API request, retrying up to 5 times if it fails, waiting 1 second between each attempt
         async with aiohttp.ClientSession() as session:
