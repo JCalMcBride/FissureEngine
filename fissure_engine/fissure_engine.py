@@ -247,9 +247,9 @@ class FissureEngine:
         for fissure_list in self.fissure_lists.values():
             fissure_list.clear()
 
-    async def build_fissure_list(self):
+    async def build_fissure_list(self, data_url="https://api.warframe.com/cdn/worldState.php"):
         old_fissures = deepcopy(self.fissure_lists)
-        world_state = await self.get_world_state()
+        world_state = await self.get_world_state(data_url=data_url)
         self.clear_fissure_lists()
         new_fissures = []
         changed_fissure_types = []
